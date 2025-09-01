@@ -1,0 +1,189 @@
+<style>
+  /* Animações e Hovers */
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in-up { opacity: 0; animation: fadeInUp 0.5s ease-out forwards; }
+  .interactive-card { transition: all 0.2s ease-in-out; border: 1px solid #f1f5f9; }
+  .interactive-card:hover { 
+    transform: translateY(-5px); 
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07); 
+    border-color: #e2e8f0;
+  }
+  .interactive-list-item:hover { background-color: #f9fafb; transform: scale(1.02); transition: all 0.2s ease-in-out; }
+
+  /* Estilos para o calendário semanal */
+  .semana-dia { min-height: 120px; }
+  .semana-dia.today { background-color: #fefce8; }
+  .semana-dia-header { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; }
+  .aula-item-semanal { border-left: 3px solid; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-top: 0.25rem; cursor: pointer; }
+  .aula-item-semanal.pacote { background-color: #eff6ff; border-color: #3b82f6; }
+  .aula-item-semanal.experimental { background-color: #f0fdf4; border-color: #22c55e; }
+</style>
+
+<div id="portal-aluno-page-content" class="p-6">
+
+  <div class="mb-8 fade-in-up" style="animation-delay: 0.1s;">
+    <h1 id="welcome-message" class="text-4xl font-extrabold text-gray-800 flex items-center gap-2"></h1>
+    <p id="progress-message" class="text-lg text-gray-600 mt-2"></p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 0.2s;"><div class="flex items-center gap-4"><div class="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600"><i data-lucide="book-open-check" class="w-6 h-6"></i></div><div><p class="text-sm text-gray-500">Aulas Totais</p><p id="stat-aulas-totais" class="text-3xl font-bold text-gray-800"></p></div></div></div>
+    <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 0.3s;"><div class="flex items-center gap-4"><div class="w-12 h-12 flex items-center justify-center rounded-full bg-orange-100 text-orange-600"><i data-lucide="calendar" class="w-6 h-6"></i></div><div><p class="text-sm text-gray-500">Próximas Aulas</p><p id="stat-proximas-aulas" class="text-3xl font-bold text-gray-800"></p></div></div></div>
+    <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 0.4s;"><div class="flex items-center gap-4"><div class="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-600"><i data-lucide="clock" class="w-6 h-6"></i></div><div><p class="text-sm text-gray-500">Horas de Estudo</p><p id="stat-horas-estudo" class="text-3xl font-bold text-gray-800"></p></div></div></div>
+    <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 0.5s;"><div class="flex items-center gap-4"><div class="w-12 h-12 flex items-center justify-center rounded-full bg-purple-100 text-purple-600"><i data-lucide="dollar-sign" class="w-6 h-6"></i></div><div><p class="text-sm text-gray-500">Valor Pago (Mês)</p><p id="stat-valor-mensal" class="text-3xl font-bold text-gray-800"></p></div></div></div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+      <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 0.6s;">
+        <div class="flex items-center justify-between mb-4">
+          <div><h3 class="text-xl font-bold text-gray-800">Minha Agenda</h3><p id="semana-atual-display" class="text-sm text-gray-500"></p></div>
+          <div class="flex gap-2"><button id="semana-anterior-btn" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="chevron-left" class="w-5 h-5"></i></button><button id="proxima-semana-btn" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="chevron-right" class="w-5 h-5"></i></button></div>
+        </div>
+        <div id="calendario-semanal-corpo" class="grid grid-cols-7 border-t border-l"></div>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 0.7s;">
+        <h3 class="text-xl font-bold mb-4 text-gray-800">Situação Financeira</h3>
+        <div id="financeiro-container" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 0.8s;">
+        <h3 class="text-xl font-bold mb-4 text-gray-800">Histórico Recente</h3>
+        <div id="historico-pagamentos" class="space-y-3"></div>
+      </div>
+    </div>
+    <div class="lg:col-span-1 space-y-6">
+      <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 0.9s;">
+        <h3 class="text-xl font-bold mb-4 text-gray-800">Seu Progresso</h3>
+        <div id="progresso-nivel-container" class="mb-6"></div>
+        <div id="progresso-cards-container" class="grid grid-cols-3 gap-4 text-center"></div>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-md border interactive-card fade-in-up" style="animation-delay: 1s;">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">A</div>
+          <div><p class="font-semibold text-gray-800">Admin Oxion</p><p class="text-sm text-gray-500">Seu Professor</p></div>
+        </div>
+        <hr class="my-3"/><p id="obs-professor" class="text-gray-600 italic leading-relaxed"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if (document.getElementById('portal-aluno-page-content')) {
+    
+    // --- DADOS FAKE (MOCK) PARA O PORTAL DO ALUNO ---
+    const fakeData = {
+        alunoLogado: {
+            id: 'aluno1', 
+            nome: 'Maria Silva', 
+            idioma: 'Inglês', 
+            nivel: 'Intermediário', 
+            observacoes: 'Excelente progresso em conversação. Recomendo focar nos phrasal verbs.'
+        },
+        aulas: [
+            { id: 'aula1', professor: 'Admin Oxion', date: '2025-08-12', hora: '18:00', aluno: 'Maria Silva', tipo: 'pacote', status: 'Concluída', duracao: 60, topico: 'Past Simple Review' },
+            { id: 'aula2', professor: 'Admin Oxion', date: '2025-08-19', hora: '18:00', aluno: 'Maria Silva', tipo: 'pacote', status: 'Concluída', duracao: 60, topico: 'Present Continuous' },
+            { id: 'aula3', professor: 'Admin Oxion', date: '2025-08-26', hora: '18:00', aluno: 'Maria Silva', tipo: 'pacote', status: 'Concluída', duracao: 60, topico: 'Future Tenses' },
+            { id: 'aula4', professor: 'Admin Oxion', date: '2025-09-02', hora: '18:00', aluno: 'Maria Silva', tipo: 'pacote', status: 'Agendada', topico: 'Modal Verbs' },
+            { id: 'aula5', professor: 'Admin Oxion', date: '2025-09-09', hora: '18:00', aluno: 'Maria Silva', tipo: 'pacote', status: 'Agendada', topico: 'Conversation Practice' },
+            { id: 'aula6', professor: 'Admin Oxion', date: '2025-09-16', hora: '18:00', aluno: 'Maria Silva', tipo: 'pacote', status: 'Agendada', topico: 'Phrasal Verbs' },
+        ],
+        pagamentos: [
+            { id: 'pag1', estudanteId: 'aluno1', data: '2025-08-01', valor: '550', status: 'Pago', referencia: 'Pacote 10 aulas - Agosto' },
+            { id: 'pag2', estudanteId: 'aluno1', data: '2025-09-01', valor: '550', status: 'Pendente', referencia: 'Pacote 10 aulas - Setembro' },
+        ]
+    };
+
+    let dataReferenciaSemana = new Date('2025-09-01T12:00:00'); 
+    
+    const renderPortalAluno = () => {
+        const { alunoLogado, aulas, pagamentos } = fakeData;
+        const aulasDoAluno = aulas.filter(aula => aula.aluno === alunoLogado.nome);
+        const pagamentosDoAluno = pagamentos.filter(p => p.estudanteId === alunoLogado.id);
+        
+        const hoje = new Date('2025-09-01T12:00:00'); 
+        hoje.setHours(0,0,0,0);
+
+        const aulasTotais = aulasDoAluno.length;
+        const aulasConcluidas = aulasDoAluno.filter(a => new Date(a.date) < hoje && a.status === 'Concluída');
+        const proximasAulas = aulasDoAluno.filter(a => new Date(a.date) >= hoje);
+        const horasEstudo = (aulasConcluidas.reduce((sum, aula) => sum + (parseInt(aula.duracao) || 60), 0) / 60).toFixed(1);
+        
+        let financeiro = { pago: 0, pendente: 0, atrasado: 0 };
+        pagamentosDoAluno.forEach(p => {
+            const valor = parseFloat(p.valor || 0);
+            if(p.status === 'Pago') financeiro.pago += valor;
+            else if(p.status === 'Pendente') financeiro.pendente += valor;
+            else if(p.status === 'Atrasado') financeiro.atrasado += valor;
+        });
+
+        const valorMensal = pagamentosDoAluno.filter(p => p.status === 'Pago' && new Date(p.data).getMonth() === hoje.getMonth()).reduce((sum, p) => sum + parseFloat(p.valor || 0), 0);
+        
+        document.getElementById('welcome-message').innerHTML = `Olá, <strong>${alunoLogado.nome.split(' ')[0]}</strong>! <span class="text-3xl">👋</span>`;
+        document.getElementById('progress-message').textContent = `Continue seu progresso em ${alunoLogado.idioma}. Você está indo muito bem!`;
+        document.getElementById('stat-aulas-totais').textContent = aulasTotais;
+        document.getElementById('stat-proximas-aulas').textContent = proximasAulas.length;
+        document.getElementById('stat-horas-estudo').textContent = `${horasEstudo}h`;
+        document.getElementById('stat-valor-mensal').textContent = valorMensal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        const semanaDisplay = document.getElementById('semana-atual-display');
+        const calendarioCorpo = document.getElementById('calendario-semanal-corpo');
+        const primeiroDia = new Date(dataReferenciaSemana);
+        primeiroDia.setDate(primeiroDia.getDate() - primeiroDia.getDay());
+        const ultimoDia = new Date(primeiroDia);
+        ultimoDia.setDate(ultimoDia.getDate() + 6);
+        semanaDisplay.textContent = `${primeiroDia.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'})} - ${ultimoDia.toLocaleDateString('pt-BR', {day:'2-digit', month:'short', year:'numeric'})}`;
+        calendarioCorpo.innerHTML = '';
+        for (let i = 0; i < 7; i++) {
+            const diaAtual = new Date(primeiroDia);
+            diaAtual.setDate(diaAtual.getDate() + i);
+            const aulasDoDia = aulasDoAluno.filter(a => a.date === diaAtual.toISOString().slice(0, 10));
+            const diaEl = document.createElement('div');
+            diaEl.className = 'semana-dia p-2 border-b border-r' + (diaAtual.toDateString() === hoje.toDateString() ? ' today' : '');
+            diaEl.innerHTML = `<div class="semana-dia-header flex justify-between"><span>${diaAtual.toLocaleDateString('pt-BR', {weekday: 'short'})}</span><span class="font-bold">${diaAtual.getDate()}</span></div><div class="aulas-do-dia-container">${aulasDoDia.map(aula => `<div class="aula-item-semanal ${aula.tipo}" title="${aula.topico || 'Aula'}"><p><strong>${aula.hora}</strong> - ${aula.topico || 'Aula'}</p></div>`).join('')}</div>`;
+            calendarioCorpo.appendChild(diaEl);
+        }
+        
+        const financeiroContainer = document.getElementById('financeiro-container');
+        financeiroContainer.innerHTML = `<div class="bg-green-50 p-4 rounded-lg flex flex-col items-center justify-center"><i data-lucide="check-circle" class="w-8 h-8 text-green-600 mb-2"></i><p class="text-xl font-bold text-green-700">${financeiro.pago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p><p class="text-sm text-green-600">Pago</p></div><div class="bg-yellow-50 p-4 rounded-lg flex flex-col items-center justify-center"><i data-lucide="clock-rewind" class="w-8 h-8 text-yellow-600 mb-2"></i><p class="text-xl font-bold text-yellow-700">${financeiro.pendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p><p class="text-sm text-yellow-600">Pendente</p></div><div class="bg-red-50 p-4 rounded-lg flex flex-col items-center justify-center"><i data-lucide="alert-triangle" class="w-8 h-8 text-red-600 mb-2"></i><p class="text-xl font-bold text-red-700">${financeiro.atrasado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p><p class="text-sm text-red-600">Em Atraso</p></div>`;
+        
+        const historicoPagamentosEl = document.getElementById('historico-pagamentos');
+        historicoPagamentosEl.innerHTML = '';
+        if(pagamentosDoAluno.length > 0) {
+            pagamentosDoAluno.sort((a,b) => new Date(b.data) - new Date(a.data)).forEach(p => {
+                const dataFmt = new Date(p.data + 'T00:00:00-03:00').toLocaleDateString('pt-BR');
+                const valorFmt = parseFloat(p.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const statusColor = p.status === 'Pago' ? 'text-green-600' : p.status === 'Pendente' ? 'text-yellow-600' : 'text-red-600';
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center p-2 rounded-md border-b last:border-b-0 interactive-list-item';
+                item.innerHTML = `<div><p class="font-semibold text-gray-800">${p.referencia || 'Pagamento'}</p><p class="text-sm text-gray-500">${dataFmt} • <span class="${statusColor}">${p.status}</span></p></div><div class="font-bold ${statusColor}">${valorFmt}</div>`;
+                historicoPagamentosEl.appendChild(item);
+            });
+        } else {
+            historicoPagamentosEl.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhum pagamento registrado</p>';
+        }
+
+        const progressoCardsContainer = document.getElementById('progresso-cards-container');
+        progressoCardsContainer.innerHTML = `<div class="bg-blue-50 p-4 rounded-lg flex flex-col items-center"><i data-lucide="line-chart" class="w-8 h-8 text-blue-600 mb-2"></i><p class="text-xl font-bold text-blue-700">${aulasConcluidas.length}</p><p class="text-sm text-blue-600">Aulas Concluídas</p></div><div class="bg-green-50 p-4 rounded-lg flex flex-col items-center"><i data-lucide="award" class="w-8 h-8 text-green-600 mb-2"></i><p class="text-xl font-bold text-green-700">0</p><p class="text-sm text-green-600">Marcos Atingidos</p></div><div class="bg-purple-50 p-4 rounded-lg flex flex-col items-center"><i data-lucide="globe" class="w-8 h-8 text-purple-600 mb-2"></i><p class="text-xl font-bold text-purple-700">${alunoLogado.idioma || 'N/D'}</p><p class="text-sm text-purple-600">Estudando</p></div>`;
+
+        const nivelContainer = document.getElementById('progresso-nivel-container');
+        const nivelAtual = alunoLogado.nivel || 'Não definido';
+        let progressoPercent = 0;
+        if (nivelAtual === 'Iniciante') progressoPercent = 33;
+        else if (nivelAtual === 'Intermediário') progressoPercent = 66;
+        else if (nivelAtual === 'Avançado') progressoPercent = 100;
+        const chipPosition = progressoPercent > 90 ? 'calc(100% - 60px)' : `calc(${progressoPercent}% - 30px)`;
+
+        nivelContainer.innerHTML = `<p class="text-sm text-gray-500 mb-2">Nível Atual</p><div class="w-full bg-gray-200 rounded-full h-2.5 relative"><div class="bg-orange-500 h-2.5 rounded-full" style="width: ${progressoPercent}%;"></div><span class="absolute -top-6 bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded-full" style="left: ${chipPosition};">${nivelAtual}</span></div>`;
+        
+        document.getElementById('obs-professor').textContent = alunoLogado.observacoes;
+        
+        lucide.createIcons();
+    };
+
+    document.getElementById('semana-anterior-btn').addEventListener('click', () => { dataReferenciaSemana.setDate(dataReferenciaSemana.getDate() - 7); renderPortalAluno(); });
+    document.getElementById('proxima-semana-btn').addEventListener('click', () => { dataReferenciaSemana.setDate(dataReferenciaSemana.getDate() + 7); renderPortalAluno(); });
+
+    renderPortalAluno();
+}
+</script>

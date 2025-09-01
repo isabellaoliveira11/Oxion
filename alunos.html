@@ -1,0 +1,169 @@
+<div id="alunos-page-content">
+  <div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Alunos</h1>
+      <button id="add-aluno-btn" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 text-sm font-semibold flex items-center gap-2">
+        <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Aluno
+      </button>
+    </div>
+
+    <input type="text" id="search-input" placeholder="Busque por nome, e-mail ou idioma..." class="w-full border rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+
+    <div class="overflow-x-auto bg-white rounded-lg shadow-sm border">
+      <table class="w-full table-auto text-left text-sm">
+        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+          <tr>
+            <th class="p-3 font-semibold">Nome</th>
+            <th class="p-3 font-semibold">E-mail</th>
+            <th class="p-3 font-semibold">Idioma</th>
+            <th class="p-3 font-semibold">Nível</th>
+            <th class="p-3 font-semibold">Plano</th>
+            <th class="p-3 font-semibold text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="alunos-lista"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<div id="aluno-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+  <div class="modal-container bg-white w-full max-w-2xl rounded-xl shadow-lg">
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h4 id="modal-title" class="text-lg font-semibold">Adicionar Novo Aluno</h4>
+      <button id="modal-close-btn" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="aluno-form" class="p-6 space-y-4">
+      <input type="hidden" id="aluno-id">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium mb-1">Nome Completo *</label><input type="text" id="aluno-nome" required class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label class="block text-sm font-medium mb-1">E-mail *</label><input type="email" id="aluno-email" required class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label class="block text-sm font-medium mb-1">Idioma</label><input type="text" id="aluno-idioma" class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label class="block text-sm font-medium mb-1">Nível</label><select id="aluno-nivel" class="w-full border rounded-lg px-3 py-2 bg-white"><option>Iniciante</option><option>Intermediário</option><option>Avançado</option></select></div>
+        <div class="col-span-2"><label class="block text-sm font-medium mb-1">Plano</label><input type="text" id="aluno-plano" placeholder="Ex: Pacote 10 aulas, Hora avulsa..." class="w-full border rounded-lg px-3 py-2"></div>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-4">
+        <button type="button" id="modal-cancel-btn" class="px-4 py-2 rounded-lg border hover:bg-gray-50 font-semibold">Cancelar</button>
+        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold">Salvar Aluno</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<script>
+if (document.getElementById('alunos-page-content')) {
+
+    // --- DADOS FAKE (MOCK) ---
+    let fakeAlunos = [
+        { id: 'a1', nome: 'Maria Silva', email: 'maria@example.com', idioma: 'Inglês', nivel: 'Intermediário', plano: 'Pacote 10 Aulas' },
+        { id: 'a2', nome: 'João Pereira', email: 'joao@example.com', idioma: 'Espanhol', nivel: 'Iniciante', plano: 'Aula Experimental' },
+        { id: 'a3', nome: 'Isabela Barros', email: 'isabela@gmail.com', idioma: 'Inglês', nivel: 'Avançado', plano: 'Pacote 10 Aulas' },
+        { id: 'a4', nome: 'Carlos Souza', email: 'carlos@example.com', idioma: 'Francês', nivel: 'Iniciante', plano: 'Pacote Mensal' },
+        { id: 'a5', nome: 'Ana Costa', email: 'ana.costa@example.com', idioma: 'Inglês', nivel: 'Intermediário', plano: 'Pacote 5 Aulas' },
+        { id: 'a6', nome: 'Rafael Oliveira', email: 'rafael@example.com', idioma: 'Italiano', nivel: 'Iniciante', plano: 'Aula Avulsa' },
+        { id: 'a7', nome: 'Bruna Lima', email: 'bruna@example.com', idioma: 'Alemão', nivel: 'Avançado', plano: 'Pacote Mensal' },
+        { id: 'a8', nome: 'Lucas Martins', email: 'lucas@example.com', idioma: 'Inglês', nivel: 'Avançado', plano: 'Conversação' }
+    ];
+
+    const addBtn = document.getElementById('add-aluno-btn');
+    const modal = document.getElementById('aluno-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const form = document.getElementById('aluno-form');
+    const searchInput = document.getElementById('search-input');
+    const alunosLista = document.getElementById('alunos-lista');
+    const modalTitle = document.getElementById('modal-title');
+    
+    const openModal = (aluno = null) => {
+        form.reset();
+        document.getElementById('aluno-id').value = '';
+        if (aluno) {
+            modalTitle.textContent = 'Editar Aluno';
+            document.getElementById('aluno-id').value = aluno.id;
+            document.getElementById('aluno-nome').value = aluno.nome;
+            document.getElementById('aluno-email').value = aluno.email;
+            document.getElementById('aluno-idioma').value = aluno.idioma;
+            document.getElementById('aluno-nivel').value = aluno.nivel;
+            document.getElementById('aluno-plano').value = aluno.plano;
+        } else {
+            modalTitle.textContent = 'Adicionar Novo Aluno';
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    };
+    
+    const closeModal = () => modal.classList.add('hidden');
+    
+    const renderAlunos = () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filtered = fakeAlunos.filter(a => 
+            a.nome.toLowerCase().includes(searchTerm) ||
+            a.email.toLowerCase().includes(searchTerm) ||
+            a.idioma.toLowerCase().includes(searchTerm)
+        );
+        
+        alunosLista.innerHTML = '';
+        if (filtered.length === 0) {
+            alunosLista.innerHTML = `<tr><td colspan="6" class="text-center text-gray-500 p-6">Nenhum aluno encontrado.</td></tr>`;
+            return;
+        }
+        
+        const avatarColors = ['bg-blue-100 text-blue-700', 'bg-green-100 text-green-700', 'bg-yellow-100 text-yellow-700', 'bg-purple-100 text-purple-700', 'bg-pink-100 text-pink-700'];
+        filtered.forEach((aluno, index) => {
+            const avatarColor = avatarColors[index % avatarColors.length];
+            const row = document.createElement('tr');
+            row.className = 'border-t hover:bg-gray-50';
+            row.innerHTML = `
+                <td class="p-3 font-medium">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full ${avatarColor} flex-shrink-0 flex items-center justify-center font-semibold">${aluno.nome.charAt(0)}</div>
+                        <span>${aluno.nome}</span>
+                    </div>
+                </td>
+                <td class="p-3">${aluno.email}</td>
+                <td class="p-3">${aluno.idioma}</td>
+                <td class="p-3">${aluno.nivel}</td>
+                <td class="p-3">${aluno.plano}</td>
+                <td class="p-3 text-right space-x-2">
+                    <button data-id="${aluno.id}" class="edit-btn px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 text-xs font-semibold">Editar</button>
+                    <button data-id="${aluno.id}" class="delete-btn px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs font-semibold">Excluir</button>
+                </td>
+            `;
+            alunosLista.appendChild(row);
+        });
+    };
+
+    addBtn.addEventListener('click', () => openModal());
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalCancelBtn.addEventListener('click', closeModal);
+    searchInput.addEventListener('input', renderAlunos);
+    
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        // A lógica de salvar foi removida pois é um mock
+        alert('Funcionalidade de salvar desativada no modo de apresentação.');
+        closeModal();
+    });
+    
+    alunosLista.addEventListener('click', e => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        const id = target.dataset.id;
+        if (target.classList.contains('edit-btn')) {
+            const aluno = fakeAlunos.find(a => a.id === id);
+            openModal(aluno);
+        }
+        if (target.classList.contains('delete-btn')) {
+             if (confirm('Tem certeza que deseja excluir este aluno? (Ação de protótipo)')) {
+                fakeAlunos = fakeAlunos.filter(a => a.id !== id);
+                renderAlunos();
+            }
+        }
+    });
+
+    renderAlunos();
+    lucide.createIcons();
+}
+</script>

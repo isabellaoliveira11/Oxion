@@ -1,0 +1,178 @@
+<div id="pagamentos-page-content">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">Financeiro</h1>
+      <p class="text-gray-500">Gerencie e registre todos os pagamentos</p>
+    </div>
+    <button id="add-pagamento-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
+      <i data-lucide="plus" class="w-5 h-5"></i>
+      Registrar Pagamento
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-sm text-gray-500">Total Recebido</p><p id="total-recebido" class="text-2xl font-bold text-green-600"></p></div>
+    <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-sm text-gray-500">Total Pendente</p><p id="total-pendente" class="text-2xl font-bold text-yellow-600"></p></div>
+    <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-sm text-gray-500">Total de Registros</p><p id="total-registros" class="text-2xl font-bold text-gray-700"></p></div>
+  </div>
+  
+  <div class="bg-white p-6 rounded-xl shadow-sm border">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold">Histórico de Pagamentos</h3>
+        <div class="flex gap-2 items-center">
+            <label for="filtro-status" class="text-sm font-semibold text-gray-600">Status:</label>
+            <select id="filtro-status" class="border rounded-md px-2 py-1 bg-white text-sm shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                <option value="todos">Todos</option><option value="Pago">Pago</option><option value="Pendente">Pendente</option><option value="Atrasado">Atrasado</option><option value="Cancelado">Cancelado</option>
+            </select>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="text-gray-500 font-semibold text-xs uppercase">
+          <tr><th class="p-4">Estudante</th><th class="p-4">Data</th><th class="p-4">Valor</th><th class="p-4">Método</th><th class="p-4">Status</th><th class="p-4 text-center">Ações</th></tr>
+        </thead>
+        <tbody id="pagamentos-lista" class="divide-y divide-gray-200"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="pagamento-modal" class="modal-overlay fixed inset-0 bg-black/40 hidden z-50">
+  <div class="modal-container bg-white w-full max-w-2xl rounded-xl shadow-lg">
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h4 id="modal-title" class="text-lg font-semibold">Registrar Pagamento</h4>
+      <button id="modal-close-btn" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="pagamento-form" class="p-6 space-y-4">
+      <input type="hidden" id="pagamento-id">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label for="estudante" class="block text-sm font-medium mb-1">Estudante *</label><select id="estudante" required class="w-full border rounded-lg px-3 py-2 bg-white"></select></div>
+        <div><label for="data" class="block text-sm font-medium mb-1">Data *</label><input type="date" id="data" required class="w-full border rounded-lg px-3 py-2"></div>
+        <div class="col-span-2"><div id="plano-aluno-info" class="bg-orange-50 text-orange-800 p-3 rounded-lg text-sm">Plano do aluno: —</div></div>
+        <div><label for="valor" class="block text-sm font-medium mb-1">Valor (R$) *</label><input type="number" step="0.01" id="valor" required placeholder="60.00" class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label for="metodo" class="block text-sm font-medium mb-1">Método</label><select id="metodo" class="w-full border rounded-lg px-3 py-2 bg-white"><option>Pix</option><option>Cartão de Crédito</option><option>Boleto</option><option>Transferência</option><option>Dinheiro</option></select></div>
+        <div><label for="status" class="block text-sm font-medium mb-1">Status</label><select id="status" class="w-full border rounded-lg px-3 py-2 bg-white"><option>Pendente</option><option>Pago</option><option>Atrasado</option><option>Cancelado</option></select></div>
+        <div><label for="referencia" class="block text-sm font-medium mb-1">Referência (opcional)</label><input type="text" id="referencia" placeholder="ID da aula, fatura etc." class="w-full border rounded-lg px-3 py-2"></div>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-4">
+        <button type="button" id="modal-cancel-btn" class="px-4 py-2 rounded-lg border hover:bg-gray-50 font-semibold">Cancelar</button>
+        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+if (document.getElementById('pagamentos-page-content')) {
+    
+    const fakeData = {
+        alunos: [
+            { id: 'aluno1', nome: 'Maria Silva', email: 'maria@example.com', plano: 'Pacote 10 Aulas', valor: '550' },
+            { id: 'aluno2', nome: 'João Pereira', email: 'joao@example.com', plano: 'Aula Avulsa', valor: '60' },
+            { id: 'aluno3', nome: 'Isabela Barros', email: 'isabela@gmail.com', plano: 'Pacote 10 Aulas', valor: '600' },
+            { id: 'aluno4', nome: 'Carlos Souza', email: 'carlos@example.com', plano: 'Pacote Mensal', valor: '400' },
+        ],
+        pagamentos: [
+            { id: 'p1', estudanteId: 'aluno1', data: '2025-08-01', valor: '550', metodo: 'Pix', status: 'Pago', referencia: 'Pacote 10 aulas - Agosto'},
+            { id: 'p2', estudanteId: 'aluno2', data: '2025-08-15', valor: '60', metodo: 'Cartão de Crédito', status: 'Pago', referencia: 'Aula 15/08'},
+            { id: 'p3', estudanteId: 'aluno3', data: '2025-08-05', valor: '600', metodo: 'Boleto', status: 'Pago', referencia: 'Pacote Avançado'},
+            { id: 'p4', estudanteId: 'aluno4', data: '2025-09-01', valor: '400', metodo: 'Boleto', status: 'Pendente', referencia: 'Pacote Mensal - Setembro'},
+            { id: 'p5', estudanteId: 'aluno1', data: '2025-09-01', valor: '550', metodo: 'Pix', status: 'Pendente', referencia: 'Pacote 10 aulas - Setembro'},
+            { id: 'p6', estudanteId: 'aluno2', data: '2025-08-28', valor: '60', metodo: 'Pix', status: 'Atrasado', referencia: 'Aula 28/08'},
+        ]
+    };
+    
+    let fakePagamentos = fakeData.pagamentos;
+    const { alunos: fakeAlunos } = fakeData;
+
+    const addBtn = document.getElementById('add-pagamento-btn');
+    const modal = document.getElementById('pagamento-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const form = document.getElementById('pagamento-form');
+    const estudanteSelect = document.getElementById('estudante');
+    const filtroStatus = document.getElementById('filtro-status');
+    const pagamentosLista = document.getElementById('pagamentos-lista');
+
+    const openModal = (pagamento = null) => {
+        form.reset();
+        estudanteSelect.innerHTML = '<option value="" selected disabled>Selecione um estudante</option>';
+        fakeAlunos.forEach(aluno => estudanteSelect.innerHTML += `<option value="${aluno.id}">${aluno.nome}</option>`);
+        if (pagamento) {
+            document.getElementById('modal-title').textContent = 'Editar Pagamento';
+            ['id', 'estudanteId', 'data', 'valor', 'metodo', 'status', 'referencia'].forEach(field => {
+                const formId = field.replace('estudanteId', 'estudante');
+                document.getElementById(formId).value = pagamento[field];
+            });
+        } else {
+            document.getElementById('modal-title').textContent = 'Registrar Pagamento';
+            document.getElementById('data').valueAsDate = new Date();
+        }
+        document.getElementById('plano-aluno-info').textContent = 'Plano do aluno: —';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex'); // CORREÇÃO AQUI
+    };
+
+    const closeModal = () => {
+        modal.classList.remove('flex'); // CORREÇÃO AQUI
+        modal.classList.add('hidden'); // Garante que fique escondido
+    };
+
+    const renderPagamentos = () => {
+        const statusFiltro = filtroStatus.value;
+        // CORREÇÃO AQUI: A comparação estava errada
+        const filtered = fakePagamentos.filter(p => statusFiltro === 'todos' || p.status === statusFiltro);
+        
+        pagamentosLista.innerHTML = '';
+        if(filtered.length === 0) {
+            pagamentosLista.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 p-6">Nenhum registro encontrado.</td></tr>';
+        }
+
+        const statusColors = { 'Pago': 'bg-green-100 text-green-800', 'Pendente': 'bg-yellow-100 text-yellow-800', 'Atrasado': 'bg-red-100 text-red-800', 'Cancelado': 'bg-gray-100 text-gray-800' };
+        const avatarColors = ['bg-blue-100 text-blue-700', 'bg-green-100 text-green-700', 'bg-yellow-100 text-yellow-700', 'bg-purple-100 text-purple-700', 'bg-pink-100 text-pink-700'];
+
+        filtered.forEach((p, index) => {
+            const aluno = fakeAlunos.find(a => a.id === p.estudanteId);
+            const dataFmt = new Date(p.data + 'T00:00:00-03:00').toLocaleDateString('pt-BR');
+            const valorFmt = parseFloat(p.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const avatarColor = aluno ? avatarColors[aluno.id.charCodeAt(aluno.id.length - 1) % avatarColors.length] : 'bg-gray-100 text-gray-700';
+
+            pagamentosLista.innerHTML += `<tr class="hover:bg-gray-50"><td class="p-4"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-full ${avatarColor} flex-shrink-0 flex items-center justify-center font-semibold">${aluno ? aluno.nome.charAt(0) : '?'}</div><span class="font-medium text-gray-800">${aluno ? aluno.nome : 'N/A'}</span></div></td><td class="p-4">${dataFmt}</td><td class="p-4 font-semibold">${valorFmt}</td><td class="p-4">${p.metodo}</td><td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusColors[p.status] || ''}">${p.status}</span></td><td class="p-4 text-center"><button data-id="${p.id}" class="edit-btn p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full"><i data-lucide="edit-3" class="w-4 h-4"></i></button></td></tr>`;
+        });
+
+        let recebido = 0, pendente = 0;
+        fakePagamentos.forEach(p => {
+            if (p.status === 'Pago') recebido += parseFloat(p.valor);
+            if (p.status === 'Pendente') pendente += parseFloat(p.valor);
+        });
+        document.getElementById('total-recebido').textContent = recebido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        document.getElementById('total-pendente').textContent = pendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        document.getElementById('total-registros').textContent = fakePagamentos.length;
+        lucide.createIcons();
+    };
+    
+    addBtn.addEventListener('click', () => openModal());
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalCancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target.closest('.modal-overlay') === modal) closeModal(); });
+    filtroStatus.addEventListener('change', renderPagamentos);
+    estudanteSelect.addEventListener('change', () => {
+        const aluno = fakeAlunos.find(a => a.id === estudanteSelect.value);
+        if (aluno) {
+            document.getElementById('plano-aluno-info').textContent = `Plano do aluno: ${aluno.plano || 'N/D'}`;
+            if(!document.getElementById('pagamento-id').value) document.getElementById('valor').value = aluno.valor || '';
+        }
+    });
+    form.addEventListener('submit', e => { e.preventDefault(); alert('Funcionalidade de salvar desativada no modo de apresentação.'); closeModal(); });
+    pagamentosLista.addEventListener('click', e => {
+        const btn = e.target.closest('.edit-btn');
+        if (btn) {
+            const pagamento = fakePagamentos.find(p => p.id === btn.dataset.id);
+            if(pagamento) openModal(pagamento);
+        }
+    });
+
+    renderPagamentos();
+    lucide.createIcons();
+}
+</script>

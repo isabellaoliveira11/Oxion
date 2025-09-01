@@ -1,0 +1,252 @@
+<div id="materiais-page-content">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">Materiais de Aula</h1>
+      <p class="text-gray-500">Gerencie seus recursos e arquivos de ensino</p>
+    </div>
+    <button id="add-material-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
+      <i data-lucide="plus" class="w-5 h-5"></i>
+      Adicionar Material
+    </button>
+  </div>
+
+  <div class="mb-6">
+    <div class="relative">
+      <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+      <input type="text" id="search-input" placeholder="Buscar materiais..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+    </div>
+  </div>
+
+  <div id="materiais-lista" class="space-y-4">
+    </div>
+</div>
+
+
+<div id="material-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+  <div class="modal-container bg-white w-full max-w-lg rounded-xl shadow-lg">
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h4 id="modal-title" class="text-lg font-semibold">Adicionar Novo Material</h4>
+      <button id="modal-close-btn" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    
+    <form id="material-form" class="p-6 space-y-4">
+      <input type="hidden" id="material-id">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label for="titulo" class="block text-sm font-medium mb-1">Título</label>
+          <input type="text" id="titulo" required class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        </div>
+        <div class="col-span-2">
+            <label for="tipo" class="block text-sm font-medium mb-1">Tipo</label>
+            <select id="tipo" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <option>PDF</option>
+                <option>Vídeo</option>
+                <option>Link</option>
+                <option>Áudio</option>
+                <option>Documento</option>
+            </select>
+        </div>
+        <div class="col-span-2">
+          <label for="descricao" class="block text-sm font-medium mb-1">Descrição</label>
+          <textarea id="descricao" rows="3" class="w-full border rounded-lg px-3 py-2"></textarea>
+        </div>
+        <div class="col-span-2">
+            <label for="arquivo" class="block text-sm font-medium mb-1">Arquivo</label>
+            <input type="file" id="arquivo" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100">
+        </div>
+        <div>
+            <label for="idioma" class="block text-sm font-medium mb-1">Idioma</label>
+            <input type="text" id="idioma" value="Inglês" class="w-full border rounded-lg px-3 py-2">
+        </div>
+        <div>
+            <label for="nivel" class="block text-sm font-medium mb-1">Nível</label>
+            <select id="nivel" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <option>Iniciante</option>
+                <option selected>Intermediário</option>
+                <option>Avançado</option>
+                <option>Todos</option>
+            </select>
+        </div>
+        <div class="col-span-2">
+          <label for="tags" class="block text-sm font-medium mb-1">Tags (separadas por vírgula)</label>
+          <input type="text" id="tags" placeholder="Ex: gramática, vocabulário, conversação" class="w-full border rounded-lg px-3 py-2">
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-4">
+        <button type="button" id="modal-cancel-btn" class="px-4 py-2 rounded-lg border hover:bg-gray-50 font-semibold">Cancelar</button>
+        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold">Salvar Material</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Garante que o script só rode depois que o conteúdo for inserido na página principal.
+  // Usamos um seletor específico da página para ter certeza.
+  if (document.getElementById('materiais-page-content')) {
+    
+    const STORAGE_KEY_MATERIAIS = 'oxion_materiais';
+
+    // --- Elementos do DOM ---
+    const addMaterialBtn = document.getElementById('add-material-btn');
+    const modal = document.getElementById('material-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const form = document.getElementById('material-form');
+    const searchInput = document.getElementById('search-input');
+    const materiaisLista = document.getElementById('materiais-lista');
+    const modalTitle = document.getElementById('modal-title');
+
+    // --- Funções de Dados ---
+    const getMateriais = () => JSON.parse(localStorage.getItem(STORAGE_KEY_MATERIAIS)) || [];
+    const saveMateriais = (data) => localStorage.setItem(STORAGE_KEY_MATERIAIS, JSON.stringify(data));
+    const uid = () => `m-${Date.now().toString(36)}-${Math.random().toString(36).substr(2)}`;
+
+    // --- Funções do Modal ---
+    const openModal = (material = null) => {
+      form.reset();
+      document.getElementById('material-id').value = '';
+      if (material) {
+        modalTitle.textContent = 'Editar Material';
+        document.getElementById('material-id').value = material.id;
+        document.getElementById('titulo').value = material.titulo;
+        document.getElementById('tipo').value = material.tipo;
+        document.getElementById('descricao').value = material.descricao;
+        document.getElementById('idioma').value = material.idioma;
+        document.getElementById('nivel').value = material.nivel;
+        document.getElementById('tags').value = material.tags.join(', ');
+      } else {
+        modalTitle.textContent = 'Adicionar Novo Material';
+      }
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    // --- Função de Renderização ---
+    const renderMateriais = () => {
+      const materiais = getMateriais();
+      const searchTerm = searchInput.value.toLowerCase();
+      
+      const filteredMateriais = materiais.filter(m => 
+        m.titulo.toLowerCase().includes(searchTerm) ||
+        m.descricao.toLowerCase().includes(searchTerm) ||
+        m.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+      );
+
+      materiaisLista.innerHTML = ''; // Limpa a lista
+
+      if (filteredMateriais.length === 0) {
+        materiaisLista.innerHTML = `<div class="text-center text-gray-500 py-10">
+            <i data-lucide="folder-search" class="w-12 h-12 mx-auto mb-2"></i>
+            <p>Nenhum material encontrado.</p>
+            ${materiais.length > 0 ? '<p class="text-sm">Tente uma busca diferente.</p>' : '<p class="text-sm">Clique em "Adicionar Material" para começar.</p>'}
+        </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      filteredMateriais.forEach(material => {
+        const tipoIcon = {
+            'PDF': 'file-text',
+            'Vídeo': 'video',
+            'Link': 'link',
+            'Áudio': 'music',
+            'Documento': 'file-spreadsheet',
+        }[material.tipo] || 'file';
+
+        const item = document.createElement('div');
+        item.className = 'bg-white shadow-sm rounded-lg p-4 border flex flex-col sm:flex-row sm:items-start gap-4';
+        item.innerHTML = `
+          <div class="flex-shrink-0">
+              <i data-lucide="${tipoIcon}" class="w-8 h-8 text-orange-500"></i>
+          </div>
+          <div class="flex-grow">
+              <h3 class="font-bold text-lg">${material.titulo}</h3>
+              <p class="text-gray-600 text-sm mb-2">${material.descricao}</p>
+              <div class="text-xs text-gray-500 mb-3">
+                  <span>${material.idioma} • ${material.nivel}</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                  ${material.tags.map(tag => `<span class="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">${tag}</span>`).join('')}
+              </div>
+          </div>
+          <div class="flex-shrink-0 flex sm:flex-col gap-2 pt-2">
+              <button data-id="${material.id}" class="edit-btn text-sm font-semibold text-blue-600 hover:underline">Editar</button>
+              <button data-id="${material.id}" class="delete-btn text-sm font-semibold text-red-600 hover:underline">Excluir</button>
+          </div>
+        `;
+        materiaisLista.appendChild(item);
+      });
+      lucide.createIcons();
+    };
+
+    // --- Lógica de Eventos ---
+    addMaterialBtn.addEventListener('click', () => openModal());
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalCancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    searchInput.addEventListener('input', renderMateriais);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('material-id').value;
+      const tags = document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(Boolean);
+
+      const materialData = {
+        id: id || uid(),
+        titulo: document.getElementById('titulo').value,
+        tipo: document.getElementById('tipo').value,
+        descricao: document.getElementById('descricao').value,
+        idioma: document.getElementById('idioma').value,
+        nivel: document.getElementById('nivel').value,
+        tags: tags
+        // Nota: O manuseio do upload do arquivo precisaria de um backend.
+        // Por enquanto, estamos salvando apenas as informações de texto.
+      };
+
+      let materiais = getMateriais();
+      if (id) { // Editando
+        materiais = materiais.map(m => m.id === id ? materialData : m);
+      } else { // Adicionando
+        materiais.push(materialData);
+      }
+      saveMateriais(materiais);
+      renderMateriais();
+      closeModal();
+    });
+
+    materiaisLista.addEventListener('click', (e) => {
+        if (e.target.classList.contains('edit-btn')) {
+            const id = e.target.dataset.id;
+            const material = getMateriais().find(m => m.id === id);
+            openModal(material);
+        }
+        if (e.target.classList.contains('delete-btn')) {
+            const id = e.target.dataset.id;
+            if (confirm('Tem certeza que deseja excluir este material?')) {
+                let materiais = getMateriais().filter(m => m.id !== id);
+                saveMateriais(materiais);
+                renderMateriais();
+            }
+        }
+    });
+
+    // --- Carga Inicial ---
+    function seedMateriais() {
+        if (getMateriais().length === 0) {
+            saveMateriais([
+                { id: uid(), titulo: 'Present Perfect Explained', tipo: 'PDF', descricao: 'Guia completo sobre o tempo verbal Present Perfect com exemplos.', idioma: 'Inglês', nivel: 'Intermediário', tags: ['gramática', 'verbo'] },
+                { id: uid(), titulo: 'Business English - Meeting Vocabulary', tipo: 'Vídeo', descricao: 'Vídeo curto com vocabulário essencial para reuniões de negócios.', idioma: 'Inglês', nivel: 'Avançado', tags: ['business', 'vocabulário', 'conversação'] },
+            ]);
+        }
+    }
+
+    seedMateriais();
+    renderMateriais();
+  }
+</script>

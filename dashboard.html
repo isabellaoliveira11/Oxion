@@ -1,0 +1,126 @@
+<style>
+  /* Animações e Hovers */
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in-up { opacity: 0; animation: fadeInUp 0.5s ease-out forwards; }
+  .interactive-card { transition: all 0.2s ease-in-out; border: 1px solid #f1f5f9; }
+  .interactive-card:hover { 
+    transform: translateY(-5px); 
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07); 
+    border-color: #e2e8f0;
+  }
+</style>
+
+<div id="dashboard-page-content">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-xl shadow-sm interactive-card fade-in-up" style="animation-delay: 0.1s;"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500">Total de Professores</p><p id="stat-professores" class="text-3xl font-bold text-gray-800"></p></div><div class="w-12 h-12 flex items-center justify-center rounded-lg bg-purple-100 text-purple-600"><i data-lucide="users-round" class="w-6 h-6"></i></div></div></div>
+    <div class="bg-white p-6 rounded-xl shadow-sm interactive-card fade-in-up" style="animation-delay: 0.2s;"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500">Alunos Ativos</p><p id="stat-alunos" class="text-3xl font-bold text-gray-800"></p></div><div class="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600"><i data-lucide="users" class="w-6 h-6"></i></div></div></div>
+    <div class="bg-white p-6 rounded-xl shadow-sm interactive-card fade-in-up" style="animation-delay: 0.3s;"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500">Aulas Agendadas</p><p id="stat-aulas" class="text-3xl font-bold text-gray-800"></p></div><div class="w-12 h-12 flex items-center justify-center rounded-lg bg-orange-100 text-orange-600"><i data-lucide="calendar" class="w-6 h-6"></i></div></div></div>
+    <div class="bg-white p-6 rounded-xl shadow-sm interactive-card fade-in-up" style="animation-delay: 0.4s;"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500">Receita do Mês</p><p id="stat-receita" class="text-3xl font-bold text-gray-800"></p></div><div class="w-12 h-12 flex items-center justify-center rounded-lg bg-green-100 text-green-600"><i data-lucide="dollar-sign" class="w-6 h-6"></i></div></div></div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm interactive-card fade-in-up" style="animation-delay: 0.5s;">
+        <h3 class="text-xl font-bold mb-4 text-gray-800">Atividade Recente</h3>
+        <div id="atividade-recente" class="space-y-3"></div>
+    </div>
+    <div class="lg:col-span-1 space-y-6">
+      <div class="bg-white p-6 rounded-xl shadow-sm interactive-card fade-in-up" style="animation-delay: 0.6s;">
+          <h3 class="text-xl font-bold mb-4 text-gray-800">Resumo Financeiro</h3>
+          <div id="resumo-financeiro" class="space-y-4"></div>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm interactive-card fade-in-up" style="animation-delay: 0.7s;">
+          <h3 class="text-xl font-bold mb-4 text-gray-800">Alunos em Destaque</h3>
+          <div id="alunos-destaque" class="space-y-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if (document.getElementById('dashboard-page-content')) {
+    
+    // --- DADOS FAKE (MOCK) MAIS INTERESSANTES ---
+    const fakeData = {
+        professores: [ { id: 'prof1', nome: 'Admin Oxion' }, { id: 'prof2', nome: 'Ana Costa' } ],
+        alunos: [ {id: 'a1', nome: 'Maria Silva'}, {id: 'a2', nome: 'João Pereira'}, {id: 'a3', nome: 'Isabela Barros'}, {id: 'a4', nome: 'Carlos Souza'}, {id: 'a5', nome: 'Ana Costa'}, {id: 'a6', nome: 'Rafael Oliveira'}, {id: 'a7', nome: 'Bruna Lima'}, {id: 'a8', nome: 'Lucas Martins'} ],
+        aulas: [
+            { date: '2025-08-29', status: 'Concluída', aluno: 'Isabela Barros' },
+            { date: '2025-08-31', status: 'Concluída', aluno: 'Maria Silva' },
+            { date: '2025-09-01', status: 'Concluída', aluno: 'João Pereira' },
+            { date: '2025-09-02', status: 'Agendada', aluno: 'Maria Silva' },
+            { date: '2025-09-04', status: 'Agendada', aluno: 'Isabela Barros' },
+            { date: '2025-09-05', status: 'Agendada', aluno: 'Ana Costa' },
+            { date: '2025-09-08', status: 'Agendada', aluno: 'Carlos Souza' },
+            { date: '2025-09-09', status: 'Agendada', aluno: 'Maria Silva' },
+        ],
+        pagamentos: [
+            { status: 'Pago', data: '2025-09-01', valor: '550' },
+            { status: 'Pago', data: '2025-09-02', valor: '400' },
+            { status: 'Pago', data: '2025-08-15', valor: '40' },
+            { status: 'Pendente', data: '2025-09-01', valor: '600' },
+        ]
+    };
+
+    const renderEmptyState = (element, icon, message) => { element.innerHTML = `<div class="text-center text-gray-400 py-6"><i data-lucide="${icon}" class="w-10 h-10 mx-auto mb-2"></i><p class="text-sm">${message}</p></div>`; };
+    
+    const formatRelativeTime = (dateString) => {
+        const date = new Date(dateString + 'T12:00:00');
+        const today = new Date('2025-09-01T12:00:00'); // Data fixa para o mock
+        const diffTime = today - date;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) - 1;
+
+        if (diffDays < 0) return `em ${-diffDays} dias`;
+        if (diffDays === 0) return 'hoje';
+        if (diffDays === 1) return 'ontem';
+        return `há ${diffDays} dias`;
+    };
+
+    const renderDashboard = () => {
+        const { alunos, aulas, pagamentos, professores } = fakeData;
+        const hoje = new Date('2025-09-01T12:00:00'); 
+        const inicioDoMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+        // Cards
+        document.getElementById('stat-professores').textContent = professores.length;
+        document.getElementById('stat-alunos').textContent = alunos.length;
+        document.getElementById('stat-aulas').textContent = aulas.filter(a => a.status === 'Agendada' && new Date(a.date) >= hoje).length;
+        const receitaDoMes = pagamentos.filter(p => p.status === 'Pago' && new Date(p.data).getMonth() === hoje.getMonth()).reduce((t, p) => t + parseFloat(p.valor), 0);
+        document.getElementById('stat-receita').textContent = receitaDoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        // Resumo Financeiro
+        const resumoFinanceiroEl = document.getElementById('resumo-financeiro');
+        const receitaPendente = pagamentos.filter(p => p.status === 'Pendente').reduce((t, p) => t + parseFloat(p.valor), 0);
+        resumoFinanceiroEl.innerHTML = `
+            <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg"><span class="font-medium text-green-800 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4"></i>Receita do Mês</span><span class="font-bold text-green-600">${receitaDoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+            <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg"><span class="font-medium text-yellow-800 flex items-center gap-2"><i data-lucide="receipt" class="w-4 h-4"></i>Total Pendente</span><span class="font-bold text-yellow-600">${receitaPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+            <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg"><span class="font-medium text-blue-800 flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i>Aulas Concluídas (Mês)</span><span class="font-bold text-blue-600">${aulas.filter(a => a.status === 'Concluída' && new Date(a.date).getMonth() === hoje.getMonth()).length}</span></div>
+        `;
+        
+        // Atividade Recente
+        const atividadeRecenteEl = document.getElementById('atividade-recente');
+        const ultimasAtividades = aulas.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
+        atividadeRecenteEl.innerHTML = '';
+        if (ultimasAtividades.length > 0) {
+            ultimasAtividades.forEach(aula => {
+                const icon = aula.status === 'Concluída' ? 'calendar-check' : 'calendar-plus';
+                const color = aula.status === 'Concluída' ? 'text-green-500' : 'text-blue-500';
+                atividadeRecenteEl.innerHTML += `<div class="flex items-start gap-3 p-2 border-b last:border-b-0"><i data-lucide="${icon}" class="w-5 h-5 ${color} flex-shrink-0 mt-1"></i><div><p class="text-sm font-semibold">${aula.aluno}</p><p class="text-xs text-gray-500">Aula ${aula.status.toLowerCase()} • ${formatRelativeTime(aula.date)}</p></div></div>`;
+            });
+        } else {
+            renderEmptyState(atividadeRecenteEl, 'activity', 'Nenhuma atividade recente.');
+        }
+
+        // Alunos em Destaque
+        const alunosDestaqueEl = document.getElementById('alunos-destaque');
+        alunosDestaqueEl.innerHTML = '';
+        const alunosComMaisAulas = alunos.slice(0, 3);
+        alunosComMaisAulas.forEach(aluno => {
+            alunosDestaqueEl.innerHTML += `<div class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md"><div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold">${aluno.nome.charAt(0)}</div><p class="font-semibold text-gray-700">${aluno.nome}</p></div>`;
+        });
+
+        lucide.createIcons();
+    };
+
+    renderDashboard();
+}
+</script>

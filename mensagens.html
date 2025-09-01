@@ -1,0 +1,198 @@
+<style>
+  .chat-layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    height: calc(100vh - 120px);
+    max-height: 75vh;
+  }
+</style>
+
+<div id="mensagens-page-content">
+  <div class="bg-white border rounded-lg shadow-sm chat-layout overflow-hidden">
+    <div id="conversas-sidebar" class="border-r bg-white flex flex-col">
+      <div class="p-4 border-b">
+        <h2 class="text-xl font-bold">Mensagens</h2>
+        <p class="text-sm text-gray-500">Converse com seus alunos</p>
+        <div class="mt-4">
+          <input type="text" id="aluno-search" placeholder="Buscar aluno..." class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+        </div>
+      </div>
+      <div id="conversas-lista" class="flex-1 overflow-y-auto">
+        </div>
+    </div>
+
+    <div id="chat-window" class="flex flex-col bg-gray-50">
+      <div id="initial-view" class="flex flex-col items-center justify-center h-full text-center text-gray-500">
+        <i data-lucide="message-square-text" class="w-16 h-16 mb-4"></i>
+        <h3 class="text-lg font-semibold">Selecione uma conversa</h3>
+        <p>Escolha um aluno na lista ao lado para começar a conversar.</p>
+      </div>
+
+      <div id="active-chat-view" class="hidden flex-1 flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b bg-white">
+          <div class="flex items-center gap-3">
+            <div id="chat-header-avatar" class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold"></div>
+            <div>
+              <h3 id="chat-header-name" class="font-semibold"></h3>
+              <p id="chat-header-email" class="text-sm text-gray-500"></p>
+            </div>
+          </div>
+          <button id="limpar-chat-btn" class="text-sm text-gray-500 hover:text-red-600 font-semibold">Limpar chat</button>
+        </div>
+        <div id="chat-messages" class="flex-1 p-6 space-y-4 overflow-y-auto"></div>
+        <div class="p-4 border-t bg-white">
+          <form id="message-form">
+            <div class="relative">
+              <textarea id="message-input" placeholder="Mensagem para..." rows="1" class="w-full border rounded-lg p-3 pr-24 resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+              <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold">Enviar</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Enter para enviar • Shift+Enter para nova linha</p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if (document.getElementById('mensagens-page-content')) {
+
+    // --- DADOS FAKE (MOCK) ---
+    const fakeData = {
+        alunos: [
+            { id: 'aluno1', nome: 'Maria Silva', email: 'maria@example.com' },
+            { id: 'aluno2', nome: 'João Pereira', email: 'joao@example.com' },
+            { id: 'aluno3', nome: 'Isabela Barros', email: 'isabela@gmail.com' },
+            { id: 'aluno4', nome: 'Carlos Souza', email: 'carlos@example.com' },
+        ],
+        mensagens: {
+            'aluno1': [
+                { text: "Olá! Tudo bem? Só para confirmar nossa aula de amanhã às 18h.", sender: 'professor', timestamp: '2025-08-30T15:08:00Z' },
+                { text: "Oi! Tudo certo. Confirmado!", sender: 'aluno', timestamp: '2025-08-30T15:09:00Z' },
+            ],
+            'aluno2': [
+                { text: "Podemos remarcar a aula?", sender: 'aluno', timestamp: '2025-08-29T13:09:00Z' },
+            ],
+            'aluno3': [
+                { text: "Adorei os materiais da última aula. Aquele vídeo foi muito útil!", sender: 'aluno', timestamp: '2025-08-31T11:20:00Z' },
+                { text: "Que bom que gostou, Isabela! Fico feliz em ajudar.", sender: 'professor', timestamp: '2025-08-31T11:22:00Z' },
+            ]
+        }
+    };
+
+    const conversasLista = document.getElementById('conversas-lista');
+    const initialView = document.getElementById('initial-view');
+    const activeChatView = document.getElementById('active-chat-view');
+    const chatHeaderName = document.getElementById('chat-header-name');
+    const chatHeaderEmail = document.getElementById('chat-header-email');
+    const chatHeaderAvatar = document.getElementById('chat-header-avatar');
+    const chatMessages = document.getElementById('chat-messages');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    
+    let activeChatAlunoId = null;
+
+    const renderConversas = () => {
+      const alunos = fakeData.alunos;
+      const todasMensagens = fakeData.mensagens;
+      
+      const conversas = alunos.map(aluno => {
+          const mensagensAluno = todasMensagens[aluno.id] || [];
+          return { aluno, ultimaMsg: mensagensAluno[mensagensAluno.length - 1] };
+      }).sort((a, b) => {
+          if (!a.ultimaMsg) return 1;
+          if (!b.ultimaMsg) return -1;
+          return new Date(b.ultimaMsg.timestamp) - new Date(a.ultimaMsg.timestamp);
+      });
+
+      conversasLista.innerHTML = '';
+      conversas.forEach(({ aluno, ultimaMsg }) => {
+        const preview = ultimaMsg ? (ultimaMsg.sender === 'professor' ? 'Você: ' : '') + ultimaMsg.text : 'Nenhuma mensagem ainda...';
+        const timestamp = ultimaMsg ? new Date(ultimaMsg.timestamp).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', hour: '2-digit', minute:'2-digit'}).replace(',','') : '';
+
+        const item = document.createElement('div');
+        item.className = `flex items-center gap-3 p-3 cursor-pointer border-b last:border-b-0 hover:bg-orange-50 ${activeChatAlunoId === aluno.id ? 'bg-orange-50' : ''}`;
+        item.dataset.alunoId = aluno.id;
+        item.innerHTML = `
+            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex-shrink-0 flex items-center justify-center font-bold">${aluno.nome.charAt(0)}</div>
+            <div class="flex-1 overflow-hidden">
+                <div class="flex justify-between items-center">
+                    <p class="font-semibold truncate">${aluno.nome}</p>
+                    <p class="text-xs text-gray-400 flex-shrink-0">${timestamp}</p>
+                </div>
+                <p class="text-sm text-gray-500 truncate">${preview}</p>
+            </div>
+        `;
+        item.addEventListener('click', () => openChat(aluno.id));
+        conversasLista.appendChild(item);
+      });
+    };
+    
+    const openChat = (alunoId) => {
+        const aluno = fakeData.alunos.find(a => a.id === alunoId);
+        if (!aluno) return;
+
+        activeChatAlunoId = alunoId;
+        
+        initialView.classList.add('hidden');
+        activeChatView.classList.remove('hidden');
+        activeChatView.classList.add('flex');
+        
+        chatHeaderName.textContent = aluno.nome;
+        chatHeaderEmail.textContent = aluno.email;
+        chatHeaderAvatar.textContent = aluno.nome.charAt(0);
+        chatHeaderAvatar.className = 'w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold bg-blue-100 text-blue-700';
+        messageInput.placeholder = `Mensagem para ${aluno.nome}...`;
+        
+        renderConversas(); // Re-render para destacar a conversa ativa
+        renderMensagens(alunoId);
+    };
+
+    const renderMensagens = (alunoId) => {
+        const mensagens = fakeData.mensagens[alunoId] || [];
+        chatMessages.innerHTML = '';
+        mensagens.forEach(msg => {
+            const isSent = msg.sender === 'professor';
+            const timestamp = new Date(msg.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex flex-col ${isSent ? 'items-end' : 'items-start'}`;
+            msgDiv.innerHTML = `
+                <div class="px-4 py-2 rounded-lg max-w-lg ${isSent ? 'bg-orange-500 text-white' : 'bg-gray-200'}">
+                    <p>${msg.text}</p>
+                    <p class="text-xs ${isSent ? 'text-orange-200' : 'text-gray-500'} text-right mt-1">${timestamp}</p>
+                </div>
+            `;
+            chatMessages.appendChild(msgDiv);
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
+    
+    messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = messageInput.value;
+        if (!text.trim() || !activeChatAlunoId) return;
+        
+        const novaMensagem = { text: text, sender: 'professor', timestamp: new Date().toISOString() };
+        
+        if (!fakeData.mensagens[activeChatAlunoId]) {
+            fakeData.mensagens[activeChatAlunoId] = [];
+        }
+        fakeData.mensagens[activeChatAlunoId].push(novaMensagem);
+        
+        renderMensagens(activeChatAlunoId);
+        renderConversas();
+        messageInput.value = '';
+        messageInput.focus();
+    });
+
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            messageForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    renderConversas();
+    lucide.createIcons();
+}
+</script>

@@ -1,0 +1,157 @@
+<div id="pacotes-page-content">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">Pacotes de Aulas</h1>
+      <p class="text-gray-500">Crie e gerencie os pacotes de aulas dos seus alunos</p>
+    </div>
+    <button id="add-pacote-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
+      <i data-lucide="plus" class="w-5 h-5"></i>
+      Novo Pacote
+    </button>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow-sm border">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+          <tr>
+            <th class="p-3">Aluno</th>
+            <th class="p-3">Nome do Pacote</th>
+            <th class="p-3">Aulas (Usadas/Total)</th>
+            <th class="p-3">Preço</th>
+            <th class="p-3">Válido Até</th>
+            <th class="p-3">Status</th>
+            <th class="p-3 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="pacotes-lista"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="pacote-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+  <div class="modal-container bg-white w-full max-w-2xl rounded-xl shadow-lg">
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h4 id="modal-title" class="text-lg font-semibold">Novo Pacote de Aulas</h4>
+      <button id="modal-close-btn" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="pacote-form" class="p-6 space-y-4">
+      <input type="hidden" id="pacote-id">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label for="aluno-pacote" class="block text-sm font-medium mb-1">Aluno</label><select id="aluno-pacote" required class="w-full border rounded-lg px-3 py-2 bg-white"></select></div>
+        <div><label for="nome-pacote" class="block text-sm font-medium mb-1">Nome do Pacote</label><input type="text" id="nome-pacote" required class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label for="total-aulas" class="block text-sm font-medium mb-1">Total de Aulas</label><input type="number" id="total-aulas" value="10" required class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label for="preco-pacote" class="block text-sm font-medium mb-1">Preço (R$)</label><input type="number" step="0.01" id="preco-pacote" value="0" required class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label for="validade" class="block text-sm font-medium mb-1">Válido Até</label><input type="date" id="validade" class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label for="status-pacote" class="block text-sm font-medium mb-1">Status</label><select id="status-pacote" class="w-full border rounded-lg px-3 py-2 bg-white"><option>Ativo</option><option>Concluído</option><option>Expirado</option><option>Cancelado</option></select></div>
+        <div class="col-span-2"><label for="obs-pacote" class="block text-sm font-medium mb-1">Observações</label><textarea id="obs-pacote" rows="3" class="w-full border rounded-lg px-3 py-2"></textarea></div>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-4">
+        <button type="button" id="modal-cancel-btn" class="px-4 py-2 rounded-lg border hover:bg-gray-50 font-semibold">Cancelar</button>
+        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold">Salvar Pacote</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+if (document.getElementById('pacotes-page-content')) {
+    
+    // --- DADOS FAKE (MOCK) ---
+    const fakeData = {
+        alunos: [
+            { id: 'aluno1', nome: 'Maria Silva' }, { id: 'aluno2', nome: 'João Pereira' }, { id: 'aluno3', nome: 'Isabela Barros' },
+            { id: 'aluno4', nome: 'Carlos Souza' }, { id: 'aluno5', nome: 'Ana Costa' }
+        ],
+        pacotes: [
+            { id: 'pkg1', alunoId: 'aluno3', nome: "Pacote Avançado Set/25", totalAulas: 10, aulasUsadas: 2, preco: '600', validade: '2025-09-30', status: 'Ativo', observacoes: 'Pagamento via Pix'},
+            { id: 'pkg2', alunoId: 'aluno1', nome: "Pacote Intermediário Ago/25", totalAulas: 8, aulasUsadas: 8, preco: '480', validade: '2025-08-31', status: 'Concluído', observacoes: ''},
+            { id: 'pkg3', alunoId: 'aluno5', nome: "Pacote Intensivo de Férias", totalAulas: 5, aulasUsadas: 1, preco: '280', validade: '2025-09-15', status: 'Ativo', observacoes: ''},
+            { id: 'pkg4', alunoId: 'aluno2', nome: "Pacote Iniciante Jul/25", totalAulas: 4, aulasUsadas: 4, preco: '160', validade: '2025-07-31', status: 'Expirado', observacoes: 'Aluno não renovou.'},
+            { id: 'pkg5', alunoId: 'aluno4', nome: "Pacote Básico Set/25", totalAulas: 4, aulasUsadas: 0, preco: '280', validade: '2025-09-30', status: 'Ativo', observacoes: ''}
+        ]
+    };
+    
+    let fakePacotes = fakeData.pacotes; // Permite a exclusão no mock
+    const fakeAlunos = fakeData.alunos;
+
+    const addBtn = document.getElementById('add-pacote-btn');
+    const modal = document.getElementById('pacote-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const form = document.getElementById('pacote-form');
+    const alunoSelect = document.getElementById('aluno-pacote');
+    const pacotesLista = document.getElementById('pacotes-lista');
+    const modalTitle = document.getElementById('modal-title');
+
+    const openModal = (pacote = null) => {
+      form.reset();
+      alunoSelect.innerHTML = '<option value="" selected disabled>Selecione um aluno</option>';
+      fakeAlunos.forEach(aluno => alunoSelect.innerHTML += `<option value="${aluno.id}">${aluno.nome}</option>`);
+      
+      if (pacote) {
+        modalTitle.textContent = 'Editar Pacote de Aulas';
+        ['id', 'alunoId', 'nome', 'totalAulas', 'preco', 'validade', 'status', 'observacoes'].forEach(field => {
+            const formId = field.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+            const el = document.getElementById(formId === 'nome' ? 'nome-pacote' : formId.replace('aluno-id', 'aluno-pacote'));
+            if(el) el.value = pacote[field];
+        });
+      } else {
+        modalTitle.textContent = 'Novo Pacote de Aulas';
+      }
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    const closeModal = () => modal.classList.add('hidden');
+
+    const renderPacotes = () => {
+        pacotesLista.innerHTML = '';
+        if(fakePacotes.length === 0) {
+            pacotesLista.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 p-6">Nenhum pacote criado.</td></tr>';
+            return;
+        }
+
+        const statusColors = {
+            'Ativo': 'bg-green-100 text-green-800', 'Concluído': 'bg-blue-100 text-blue-800',
+            'Expirado': 'bg-yellow-100 text-yellow-800', 'Cancelado': 'bg-gray-100 text-gray-800',
+        };
+
+        fakePacotes.forEach(p => {
+            const aluno = fakeAlunos.find(a => a.id === p.alunoId);
+            const validadeFmt = p.validade ? new Date(p.validade + 'T00:00:00-03:00').toLocaleDateString('pt-BR') : '—';
+            const precoFmt = parseFloat(p.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            const row = document.createElement('tr');
+            row.className = 'border-b hover:bg-gray-50';
+            row.innerHTML = `
+                <td class="p-3 font-medium">${aluno ? aluno.nome : 'Aluno não encontrado'}</td>
+                <td class="p-3">${p.nome}</td>
+                <td class="p-3">${p.aulasUsadas || 0} / ${p.totalAulas}</td>
+                <td class="p-3 font-semibold">${precoFmt}</td>
+                <td class="p-3">${validadeFmt}</td>
+                <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusColors[p.status] || ''}">${p.status}</span></td>
+                <td class="p-3 text-right">
+                    <button data-id="${p.id}" class="edit-btn text-blue-600 hover:underline text-xs font-semibold">Editar</button>
+                </td>
+            `;
+            pacotesLista.appendChild(row);
+        });
+    };
+    
+    addBtn.addEventListener('click', () => openModal());
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalCancelBtn.addEventListener('click', closeModal);
+    form.addEventListener('submit', e => { e.preventDefault(); alert('Funcionalidade de salvar desativada no modo de apresentação.'); closeModal(); });
+    pacotesLista.addEventListener('click', e => {
+        if (e.target.classList.contains('edit-btn')) {
+            const pacote = fakePacotes.find(p => p.id === e.target.dataset.id);
+            if(pacote) openModal(pacote);
+        }
+    });
+
+    renderPacotes();
+    lucide.createIcons();
+}
+</script>

@@ -1,0 +1,177 @@
+<style>
+  .modal-overlay { transition: opacity 0.3s ease-in-out; }
+  .modal-container { transition: transform 0.3s ease-in-out; }
+</style>
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold">Aulas</h1>
+    <p class="text-gray-500">Agende e acompanhe suas aulas</p>
+  </div>
+  <button id="add-aula-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
+    <i data-lucide="plus" class="w-5 h-5"></i>
+    Agendar Aula
+  </button>
+</div>
+
+<div class="bg-white shadow rounded-lg p-6 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex gap-2">
+      <button id="prev-month-btn" class="bg-gray-100 p-2 rounded-full hover:bg-gray-200"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+      <button id="next-month-btn" class="bg-gray-100 p-2 rounded-full hover:bg-gray-200"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+    </div>
+    <h2 id="mes-atual" class="text-xl font-bold"></h2>
+    <div class="flex items-center gap-4 text-sm text-gray-500">
+      <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Pacote</span>
+      <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span> Experimental</span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-7 text-center font-semibold text-gray-500 mb-2">
+    <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+  </div>
+
+  <div id="dias-container" class="grid grid-cols-7 gap-1"></div>
+</div>
+
+<div class="bg-white shadow rounded-lg p-6">
+  <h3 id="aulas-dia-titulo" class="text-lg font-semibold mb-4">Aulas em —</h3>
+  <div id="aulas-dia-lista" class="space-y-3 text-gray-700">Nenhuma aula neste dia.</div>
+</div>
+
+<div id="modal-overlay" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+  <div class="modal-container bg-white w-full max-w-2xl rounded-xl shadow-lg overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b">
+      <h4 id="modal-title" class="text-lg font-semibold">Agendar Nova Aula</h4>
+      <button id="modal-close" class="p-2 rounded hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="aula-form" class="p-5 space-y-4">
+      <input type="hidden" id="aula-id" />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium mb-1">Professor *</label><select id="professor" required class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"></select></div>
+        <div><label class="block text-sm font-medium mb-1">Estudante *</label><select id="aluno" required class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"></select></div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium mb-1">Data &amp; Hora *</label><input id="datahora" type="datetime-local" required class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></div>
+        <div><label class="block text-sm font-medium mb-1">Duração (minutos)</label><input id="duracao" type="number" min="15" step="5" value="60" class="w-full border rounded px-3 py-2"></div>
+        <div><label class="block text-sm font-medium mb-1">Custo (R$)</label><input id="custo" type="number" min="0" step="1" value="0" class="w-full border rounded px-3 py-2"></div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium mb-1">Tipo / Plano</label><select id="tipo" class="w-full border rounded px-3 py-2 bg-white"><option value="pacote">Pacote</option><option value="experimental">Experimental</option></select></div>
+        <div><label class="block text-sm font-medium mb-1">Status</label><select id="status" class="w-full border rounded px-3 py-2 bg-white"><option>Agendada</option><option>Concluída</option><option>Cancelada</option><option>Faltou</option></select></div>
+        <div><label class="block text-sm font-medium mb-1">Link da Chamada</label><input id="link" placeholder="https://zoom.us/j/…" class="w-full border rounded px-3 py-2"></div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium mb-1">Tópico / Foco</label><input id="topico" placeholder="Ex: Present Perfect..." class="w-full border rounded px-3 py-2"></div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" id="btn-cancelar" class="px-4 py-2 rounded-lg border hover:bg-gray-50">Cancelar</button>
+        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+if (document.getElementById('add-aula-btn')) {
+
+    // --- DADOS FAKE (MOCK) ---
+    const fakeData = {
+        professores: [
+            { id: 'prof1', nome: 'Admin Oxion' },
+            { id: 'prof2', nome: 'Prof. Ana' },
+            { id: 'prof3', nome: 'Prof. Carlos' }
+        ],
+        alunos: [
+            { id: 'aluno1', nome: 'Maria Silva' }, { id: 'aluno2', nome: 'João Pereira' }, { id: 'aluno3', nome: 'Isabela Barros' },
+            { id: 'aluno4', nome: 'Carlos Souza' }, { id: 'aluno5', nome: 'Ana Costa' }, { id: 'aluno6', nome: 'Rafael Oliveira' }
+        ],
+        aulas: [
+            // Aulas de Setembro
+            { id: 'aula1', professor: 'Admin Oxion', date: '2025-09-02', hora: '18:00', aluno: 'Maria Silva', tipo: 'pacote', status: 'Agendada', topico: 'Modal Verbs' },
+            { id: 'aula2', professor: 'Prof. Ana', date: '2025-09-03', hora: '10:00', aluno: 'João Pereira', tipo: 'experimental', status: 'Agendada', topico: 'Ser vs Estar' },
+            { id: 'aula3', professor: 'Admin Oxion', date: '2025-09-04', hora: '11:00', aluno: 'Isabela Barros', tipo: 'pacote', status: 'Agendada', topico: 'Business English' },
+            { id: 'aula4', professor: 'Prof. Carlos', date: '2025-09-08', hora: '09:00', aluno: 'Carlos Souza', tipo: 'pacote', status: 'Agendada', topico: 'Les articles' },
+            { id: 'aula5', professor: 'Admin Oxion', date: '2025-09-09', hora: '18:00', aluno: 'Maria Silva', tipo: 'pacote', status: 'Agendada', topico: 'Conversation' },
+            // Aulas de Outubro para teste
+            { id: 'aula6', professor: 'Prof. Ana', date: '2025-10-01', hora: '10:00', aluno: 'João Pereira', tipo: 'pacote', status: 'Agendada', topico: 'Subjuntivo' },
+        ]
+    };
+
+    const mesAtualEl = document.getElementById('mes-atual');
+    const diasContainerEl = document.getElementById('dias-container');
+    const aulasDiaTituloEl = document.getElementById('aulas-dia-titulo');
+    const aulasDiaListaEl = document.getElementById('aulas-dia-lista');
+    const modal = document.getElementById('modal-overlay');
+    const form = document.getElementById('aula-form');
+    
+    // Força o calendário a começar em Setembro de 2025 para ver os dados mockados
+    let dataAtual = new Date('2025-09-01T12:00:00');
+    let selectedCell = null;
+
+    function renderCalendar() {
+        const primeiroDia = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 1);
+        const ultimoDia = new Date(dataAtual.getFullYear(), dataAtual.getMonth() + 1, 0);
+        mesAtualEl.textContent = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(dataAtual).replace(/^\w/, c => c.toUpperCase());
+        diasContainerEl.innerHTML = '';
+
+        for (let i = 0; i < primeiroDia.getDay(); i++) { diasContainerEl.insertAdjacentHTML('beforeend', '<div></div>'); }
+
+        const aulas = fakeData.aulas; // Usa os dados fake
+        for (let i = 1; i <= ultimoDia.getDate(); i++) {
+            const dataIso = `${dataAtual.getFullYear()}-${String(dataAtual.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            const aulasDoDia = aulas.filter(a => a.date === dataIso);
+            const hoje = new Date();
+            const isToday = i === hoje.getDate() && dataAtual.getMonth() === hoje.getMonth() && dataAtual.getFullYear() === hoje.getFullYear();
+
+            const diaHtml = `<div class="h-24 p-2 bg-white rounded-lg border border-gray-200 flex flex-col relative overflow-hidden cursor-pointer hover:shadow-md" data-iso="${dataIso}"><span class="font-semibold mb-1 self-start ${isToday ? 'bg-orange-500 text-white rounded-full w-7 h-7 flex items-center justify-center' : ''}">${i}</span>${aulasDoDia.map(a => `<div class="text-xs p-1 rounded font-medium text-white mb-1 truncate ${a.tipo === 'experimental' ? 'bg-green-500' : 'bg-blue-500'}" title="${a.aluno} - Prof. ${a.professor || ''}">${a.hora} • ${a.aluno}</div>`).join('')}</div>`;
+            diasContainerEl.insertAdjacentHTML('beforeend', diaHtml);
+        }
+    }
+
+    function selectDay(cell) {
+        document.querySelectorAll('[data-iso]').forEach(d => d.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-50'));
+        cell.classList.add('ring-2', 'ring-orange-500', 'bg-orange-50');
+        selectedCell = cell;
+
+        const [yyyy, mm, dd] = cell.dataset.iso.split('-');
+        aulasDiaTituloEl.textContent = `Aulas em ${dd}/${mm}/${yyyy}`;
+        const aulas = fakeData.aulas.filter(a => a.date === cell.dataset.iso);
+        aulasDiaListaEl.innerHTML = '';
+
+        if (aulas.length === 0) { aulasDiaListaEl.innerHTML = 'Nenhuma aula neste dia.'; return; }
+
+        aulas.sort((a,b) => a.hora.localeCompare(b.hora)).forEach(a => {
+            const tipoAula = a.tipo.charAt(0).toUpperCase() + a.tipo.slice(1);
+            aulasDiaListaEl.insertAdjacentHTML('beforeend', `<div class="p-3 rounded-lg border border-gray-200"><div class="font-semibold">${a.hora} • ${a.aluno}</div><p class="text-sm text-gray-500">Professor: ${a.professor || 'N/D'}</p><div class="text-sm text-gray-500 mt-1">Plano: ${tipoAula} • Status: ${a.status}</div></div>`);
+        });
+    }
+
+    function openModal(dateISO = null) {
+        form.reset();
+        
+        const fProfessor = document.getElementById('professor');
+        fProfessor.innerHTML = '<option value="" selected disabled>Selecione um professor</option>';
+        fakeData.professores.forEach(prof => fProfessor.insertAdjacentHTML('beforeend', `<option value="${prof.nome}">${prof.nome}</option>`));
+        
+        const fAluno = document.getElementById('aluno');
+        fAluno.innerHTML = '<option value="" selected disabled>Selecione um estudante</option>';
+        fakeData.alunos.forEach(aluno => fAluno.insertAdjacentHTML('beforeend', `<option value="${aluno.nome}">${aluno.nome}</option>`));
+        
+        const dataInicial = dateISO ? `${dateISO}T18:00` : new Date().toISOString().slice(0,16);
+        document.getElementById('datahora').value = dataInicial;
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        lucide.createIcons();
+    }
+
+    function closeModal() { modal.classList.add('hidden'); }
+
+    // Event Listeners
+    document.getElementById('prev-month-btn').addEventListener('click', () => { dataAtual.setMonth(dataAtual.getMonth() - 1); renderCalendar(); });
+    document.getElementById('next-month-btn').addEventListener('click', () => { dataAtual.setMonth(dataAtual.getMonth() + 1); renderCalendar(); });
+    document.getElementById('add-aula-btn').addEventListener('click', () => openModal(selectedCell?.dataset.iso));
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('btn-cancelar').addEventListener('click', closeModal);
+    diasContainerEl.addEventListener('click', e => { const cell = e.target.closest('[data-iso]'); if (cell) selectDay(cell); });
+    diasContainerEl.addEventListener('dblclick', e => { const cell = e.target.closest('[data-iso]'); if (cell) openModal(cell.dataset.iso); });
+
+    renderCalendar();
+    lucide.createIcons();
+}
+</script>

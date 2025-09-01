@@ -1,0 +1,155 @@
+<!-- modals/schedule-class.html -->
+<div id="modalClass" class="fixed inset-0 hidden items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/40"></div>
+
+  <div class="relative w-full max-w-3xl bg-white rounded-2xl p-6">
+    <!-- Cabeçalho -->
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold text-lg">Agendar Nova Aula</h3>
+      <button class="text-slate-500" data-close-class title="Fechar">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <form id="formClass" class="space-y-6">
+      <!-- Linha 1: Estudante + Data/Hora -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium">Estudante <span class="text-red-600">*</span></label>
+          <select name="studentId" required
+                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2">
+          </select>
+          <p class="text-xs text-slate-500 mt-1">
+            Não encontrou? <a href="#" id="lnkCadastroAluno" class="text-brand-600 underline">Cadastre o aluno</a>.
+          </p>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium">Data &amp; Hora <span class="text-red-600">*</span></label>
+          <div class="relative mt-1">
+            <input type="datetime-local" name="datetime" required
+                   class="w-full rounded-lg border border-slate-200 px-3 py-2 pr-10" />
+            <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Linha 2: Duração + Custo -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium">Duração (minutos)</label>
+          <input type="number" name="duration" min="15" step="5" value="60"
+                 class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm font-medium">Custo (R$)</label>
+          <input type="number" name="cost" min="0" step="0.01" value="0"
+                 class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" />
+        </div>
+      </div>
+
+      <!-- Plano do aluno -->
+      <div id="studentPlanBanner"
+           class="rounded-lg px-4 py-3 bg-amber-50 text-amber-900 text-sm border border-amber-100">
+        Plano do aluno: —
+      </div>
+
+      <!-- Status -->
+      <div>
+        <label class="text-sm font-medium">Status</label>
+        <select name="status" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2">
+          <option>Agendada</option>
+          <option>Concluída</option>
+          <option>Remarcada</option>
+          <option selected>Cancelada</option>
+        </select>
+      </div>
+
+      <!-- Linha 3: Tópico + Link -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium">Tópico/Foco</label>
+          <input name="topic" placeholder="Ex: Present Perfect, Conversação..."
+                 class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm font-medium">Link da Chamada</label>
+          <input name="callLink" placeholder="https://zoom.us/j/... ou https://meet.google.com/..."
+                 class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 placeholder:text-slate-400" />
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div>
+        <label class="text-sm font-medium">Notas da Aula</label>
+        <textarea name="notes" rows="3" placeholder="Notas sobre o que foi abordado..."
+                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"></textarea>
+      </div>
+
+      <!-- Tarefa -->
+      <div>
+        <label class="text-sm font-medium">Tarefa Atribuída</label>
+        <textarea name="homework" rows="2" placeholder="Ex: assistir vídeo X, escrever 100 palavras..."
+                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"></textarea>
+      </div>
+
+      <!-- Ações -->
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" class="px-3 py-2 rounded-lg border flex items-center gap-2" data-close-class>
+          <i data-lucide="x" class="w-4 h-4"></i><span>Cancelar</span>
+        </button>
+        <button class="px-4 py-2 rounded-lg bg-brand-500 text-white flex items-center gap-2">
+          <i data-lucide="save" class="w-4 h-4"></i><span>Salvar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Script do modal (preenche alunos, mostra plano e atalho p/ cadastro) -->
+<script>
+  (function () {
+    const sel = document.querySelector('#modalClass select[name="studentId"]');
+    const banner = document.getElementById('studentPlanBanner');
+
+    function fillStudents() {
+      if (!window.getStudents) return;
+      const list = window.getStudents();
+      sel.innerHTML = '<option value="">Selecione um estudante</option>';
+      list.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        sel.appendChild(opt);
+      });
+    }
+
+    function updateBanner() {
+      const id = sel.value;
+      if (!id || !window.getStudents) { banner.textContent = 'Plano do aluno: —'; return; }
+      const s = window.getStudents().find(x => x.id === id);
+      if (!s) { banner.textContent = 'Plano do aluno: —'; return; }
+      if (s.plan === 'Pacote') {
+        banner.textContent = `Plano do aluno: Pacote — créditos restantes: ${s.credits_left ?? 0}`;
+      } else if (s.plan === 'Mensal') {
+        const val = Number(s.value || s.fee || 0).toFixed(2);
+        banner.textContent = `Plano do aluno: Mensal — mensalidade: R$ ${val}`;
+      } else {
+        banner.textContent = 'Plano do aluno: —';
+      }
+    }
+
+    document.getElementById('lnkCadastroAluno')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (window.openStudentModal) window.openStudentModal();
+    });
+
+    sel?.addEventListener('change', updateBanner);
+
+    // expõe para o dashboard chamar quando abrir o modal
+    window.__fillStudentsInClassModal = () => { fillStudents(); updateBanner(); };
+
+    if (document.readyState !== 'loading') { fillStudents(); updateBanner(); }
+    else document.addEventListener('DOMContentLoaded', () => { fillStudents(); updateBanner(); });
+  })();
+</script>
