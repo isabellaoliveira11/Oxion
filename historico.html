@@ -154,7 +154,7 @@ if (document.getElementById('historico-page-content')) {
     // Carga Inicial e Eventos
     fakeData.alunos.forEach(aluno => filtroAlunoEl.innerHTML += `<option value="${aluno.nome}">${aluno.nome}</option>`);
 
-    [filtroAlunoEl, filtroStatusEl, filtroDataInicioEl, filtroDataFimEl].forEach(el => el.addEventListener('change', renderHistorico));
+    [filtroAlunoEl, ...document.querySelectorAll('#filtro-status, #filtro-data-inicio, #filtro-data-fim')].forEach(el => el.addEventListener('change', renderHistorico));
     
     historicoListaEl.addEventListener('click', e => {
         const btn = e.target.closest('.view-details-btn');
