@@ -65,6 +65,7 @@
 <script>
 if (document.getElementById('pagamentos-page-content')) {
     
+    // --- DADOS FAKE (MOCK) ---
     const fakeData = {
         alunos: [
             { id: 'aluno1', nome: 'Maria Silva', email: 'maria@example.com', plano: 'Pacote 10 Aulas', valor: '550' },
@@ -110,17 +111,16 @@ if (document.getElementById('pagamentos-page-content')) {
         }
         document.getElementById('plano-aluno-info').textContent = 'Plano do aluno: —';
         modal.classList.remove('hidden');
-        modal.classList.add('flex'); // CORREÇÃO AQUI
+        modal.classList.add('flex');
     };
 
     const closeModal = () => {
-        modal.classList.remove('flex'); // CORREÇÃO AQUI
-        modal.classList.add('hidden'); // Garante que fique escondido
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
     };
 
     const renderPagamentos = () => {
         const statusFiltro = filtroStatus.value;
-        // CORREÇÃO AQUI: A comparação estava errada
         const filtered = fakePagamentos.filter(p => statusFiltro === 'todos' || p.status === statusFiltro);
         
         pagamentosLista.innerHTML = '';
@@ -154,7 +154,7 @@ if (document.getElementById('pagamentos-page-content')) {
     addBtn.addEventListener('click', () => openModal());
     modalCloseBtn.addEventListener('click', closeModal);
     modalCancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', e => { if (e.target.closest('.modal-overlay') === modal) closeModal(); });
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     filtroStatus.addEventListener('change', renderPagamentos);
     estudanteSelect.addEventListener('change', () => {
         const aluno = fakeAlunos.find(a => a.id === estudanteSelect.value);
