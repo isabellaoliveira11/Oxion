@@ -8,17 +8,17 @@
     <p class="text-gray-500">Gerencie a presença e o status de todas as aulas.</p>
   </div>
 
-  <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+  <div class="mb-6 p-4 bg-white rounded-xl border border-gray-200">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div>
         <label class="text-sm font-medium text-gray-600">Filtrar por Aluno</label>
-        <select id="filtro-aluno" class="w-full mt-1 border-gray-300 rounded-lg text-sm shadow-sm">
+        <select id="filtro-aluno" class="w-full mt-1 border-gray-300 rounded-lg text-sm shadow-sm focus:ring-orange-500 focus:border-orange-500">
           <option value="todos">Todos os Alunos</option>
         </select>
       </div>
       <div>
         <label class="text-sm font-medium text-gray-600">Filtrar por Status</label>
-        <select id="filtro-status" class="w-full mt-1 border-gray-300 rounded-lg text-sm shadow-sm">
+        <select id="filtro-status" class="w-full mt-1 border-gray-300 rounded-lg text-sm shadow-sm focus:ring-orange-500 focus:border-orange-500">
           <option value="todas">Todos os Status</option>
           <option value="Agendada">Agendada</option>
           <option value="Concluída">Concluída</option>
@@ -28,32 +28,33 @@
       </div>
       <div>
         <label class="text-sm font-medium text-gray-600">De</label>
-        <input type="date" id="filtro-data-inicio" class="w-full mt-1 border-gray-300 rounded-lg text-sm shadow-sm">
+        <input type="date" id="filtro-data-inicio" class="w-full mt-1 border-gray-300 rounded-lg text-sm shadow-sm focus:ring-orange-500 focus:border-orange-500">
       </div>
       <div>
         <label class="text-sm font-medium text-gray-600">Até</label>
-        <input type="date" id="filtro-data-fim" class="w-full mt-1 border-gray-300 rounded-lg text-sm shadow-sm">
+        <input type="date" id="filtro-data-fim" class="w-full mt-1 border-gray-300 rounded-lg text-sm shadow-sm focus:ring-orange-500 focus:border-orange-500">
       </div>
     </div>
   </div>
 
-  <div class="overflow-x-auto bg-white rounded-lg shadow-sm border">
+  <div class="overflow-x-auto bg-white rounded-xl border border-gray-200">
     <table class="w-full text-sm text-left">
-      <thead class="bg-gray-100 text-gray-600">
+      <thead class="text-gray-500 font-semibold text-xs uppercase">
         <tr>
           <th class="p-4">Data & Hora</th>
           <th class="p-4">Aluno</th>
           <th class="p-4">Professor</th>
-          <th class="p-4">Status</th>
+          <th class="p-4">Tópico</th>
+          <th class="p-4 text-center">Status</th>
           <th class="p-4 text-center">Ações</th>
         </tr>
       </thead>
-      <tbody id="historico-lista"></tbody>
+      <tbody id="historico-lista" class="divide-y divide-gray-200"></tbody>
     </table>
   </div>
 </div>
 
-<div id="aluno-historico-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+<div id="aluno-historico-modal" class="modal-overlay fixed inset-0 bg-black/40 hidden p-4 z-50">
   <div class="modal-container bg-white w-full max-w-2xl rounded-xl shadow-lg">
     <div class="flex items-center justify-between px-6 py-4 border-b">
       <h4 id="modal-aluno-nome" class="text-lg font-semibold"></h4>
@@ -73,84 +74,65 @@
 <script>
 if (document.getElementById('historico-page-content')) {
 
-    const STORAGE_KEY_ALUNOS = 'oxion_alunos';
-    const STORAGE_KEY_AULAS = 'oxion_aulas';
-    
-    const loadData = (key) => JSON.parse(localStorage.getItem(key)) || [];
+    // --- DADOS FAKE (MOCK) ---
+    const fakeData = {
+        alunos: [
+            { id: 'a1', nome: 'Maria Silva' }, { id: 'a2', nome: 'João Pereira' }, { id: 'a3', nome: 'Isabela Barros' },
+            { id: 'a4', nome: 'Carlos Souza' }, { id: 'a5', nome: 'Ana Costa' }
+        ],
+        aulas: [
+            { id: 'aula1', date: '2025-08-15', hora: '18:00', aluno: 'Maria Silva', professor: 'Admin Oxion', topico: 'Past Simple', status: 'Concluída' },
+            { id: 'aula2', date: '2025-08-21', hora: '18:09', aluno: 'Maria Silva', professor: 'Admin Oxion', topico: 'Present Continuous', status: 'Concluída' },
+            { id: 'aula3', date: '2025-08-28', hora: '10:00', aluno: 'João Pereira', professor: 'Prof. Ana', topico: 'Ser vs Estar', status: 'Faltou' },
+            { id: 'aula4', date: '2025-09-02', hora: '11:00', aluno: 'Isabela Barros', professor: 'Admin Oxion', topico: 'Business English', status: 'Agendada' },
+            { id: 'aula5', date: '2025-09-04', hora: '18:00', aluno: 'Maria Silva', professor: 'Admin Oxion', topico: 'Modal Verbs', status: 'Agendada' },
+            { id: 'aula6', date: '2025-08-29', hora: '14:00', aluno: 'Ana Costa', professor: 'Admin Oxion', topico: 'Conversation', status: 'Cancelada' }
+        ]
+    };
 
     const filtroAlunoEl = document.getElementById('filtro-aluno');
-    const filtroStatusEl = document.getElementById('filtro-status');
-    const filtroDataInicioEl = document.getElementById('filtro-data-inicio');
-    const filtroDataFimEl = document.getElementById('filtro-data-fim');
     const historicoListaEl = document.getElementById('historico-lista');
     const modal = document.getElementById('aluno-historico-modal');
 
-    const statusStyles = {
-        'Agendada': 'bg-blue-100 text-blue-800',
-        'Concluída': 'bg-green-100 text-green-800',
-        'Faltou': 'bg-yellow-100 text-yellow-800',
-        'Cancelada': 'bg-red-100 text-red-800',
-    };
-    
+    const statusStyles = { 'Agendada': 'bg-blue-100 text-blue-800', 'Concluída': 'bg-green-100 text-green-800', 'Faltou': 'bg-yellow-100 text-yellow-800', 'Cancelada': 'bg-red-100 text-red-800' };
     const avatarColors = ['bg-blue-100 text-blue-700', 'bg-green-100 text-green-700', 'bg-yellow-100 text-yellow-700', 'bg-purple-100 text-purple-700', 'bg-pink-100 text-pink-700'];
 
     const renderHistorico = () => {
-        const aulas = loadData(STORAGE_KEY_AULAS);
-        const alunos = loadData(STORAGE_KEY_ALUNOS);
-
-        const alunoFiltro = filtroAlunoEl.value;
-        const statusFiltro = filtroStatusEl.value;
-        const dataInicio = filtroDataInicioEl.value ? new Date(filtroDataInicioEl.value + 'T00:00:00') : null;
-        const dataFim = filtroDataFimEl.value ? new Date(filtroDataFimEl.value + 'T23:59:59') : null;
-
-        const aulasFiltradas = aulas.filter(aula => {
-            if (alunoFiltro !== 'todos' && aula.aluno !== alunoFiltro) return false;
-            if (statusFiltro !== 'todas' && aula.status !== statusFiltro) return false;
-            const dataAula = new Date(aula.date);
-            if (dataInicio && dataAula < dataInicio) return false;
-            if (dataFim && dataAula > dataFim) return false;
-            return true;
-        }).sort((a,b) => new Date(b.date) - new Date(a.date) || b.hora.localeCompare(a.hora));
+        const { aulas, alunos } = fakeData;
+        
+        const statusFiltro = document.getElementById('filtro-status').value;
+        const aulasFiltradas = (statusFiltro === 'todas') ? aulas : aulas.filter(a => a.status === statusFiltro);
         
         historicoListaEl.innerHTML = '';
         if (aulasFiltradas.length === 0) {
-            historicoListaEl.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-500">Nenhuma aula encontrada com estes filtros.</td></tr>';
+            historicoListaEl.innerHTML = '<tr><td colspan="6" class="text-center p-6 text-gray-500">Nenhuma aula encontrada.</td></tr>';
             return;
         }
 
-        aulasFiltradas.forEach((aula, index) => {
-            const aluno = alunos.find(a => a.nome === aula.aluno);
-            const avatarColor = aluno ? avatarColors[aluno.id.charCodeAt(aluno.id.length - 1) % avatarColors.length] : 'bg-gray-100 text-gray-700';
-            historicoListaEl.innerHTML += `
-                <tr class="border-b last:border-b-0 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-orange-50">
-                    <td class="p-4">
-                        <p class="font-medium">${new Date(aula.date + 'T00:00:00-03:00').toLocaleDateString('pt-BR')}</p>
-                        <p class="text-gray-500 text-xs">${aula.hora}</p>
-                    </td>
-                    <td class="p-4 font-medium">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full ${avatarColor} flex-shrink-0 flex items-center justify-center font-semibold">${aula.aluno.charAt(0)}</div>
-                            <span>${aula.aluno}</span>
-                        </div>
-                    </td>
-                    <td class="p-4 text-gray-600">${aula.professor || 'N/D'}</td>
-                    <td class="p-4 text-center"><span class="status-badge ${statusStyles[aula.status]}">${aula.status}</span></td>
-                    <td class="p-4 text-center">
-                        <button data-aluno-id="${aluno ? aluno.id : ''}" class="view-details-btn p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-full">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
+        aulasFiltradas
+            .sort((a,b) => new Date(b.date) - new Date(a.date) || b.hora.localeCompare(a.hora))
+            .forEach(aula => {
+                const aluno = alunos.find(a => a.nome === aula.aluno);
+                const avatarColor = aluno ? avatarColors[aluno.id.charCodeAt(aluno.id.length - 1) % avatarColors.length] : 'bg-gray-100 text-gray-700';
+                historicoListaEl.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-4"><p class="font-medium text-gray-800">${new Date(aula.date + 'T00:00:00-03:00').toLocaleDateString('pt-BR', {day: '2-digit', month:'2-digit', year:'numeric'})}</p><p class="text-gray-500 text-xs">${aula.hora}</p></td>
+                        <td class="p-4"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-full ${avatarColor} flex-shrink-0 flex items-center justify-center font-semibold">${aula.aluno.charAt(0)}</div><span class="font-medium text-gray-800">${aula.aluno}</span></div></td>
+                        <td class="p-4 text-gray-600">${aula.professor || 'N/D'}</td>
+                        <td class="p-4 text-gray-600">${aula.topico || '---'}</td>
+                        <td class="p-4 text-center"><span class="status-badge ${statusStyles[aula.status]}">${aula.status}</span></td>
+                        <td class="p-4 text-center"><button data-aluno-id="${aluno ? aluno.id : ''}" class="view-details-btn p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full"><i data-lucide="eye" class="w-5 h-5"></i></button></td>
+                    </tr>
+                `;
         });
         lucide.createIcons();
     };
 
     const openAlunoHistoricoModal = (alunoId) => {
-        const aluno = loadData(STORAGE_KEY_ALUNOS).find(a => a.id === alunoId);
+        const aluno = fakeData.alunos.find(a => a.id === alunoId);
         if (!aluno) return;
 
-        const aulas = loadData(STORAGE_KEY_AULAS).filter(a => a.aluno === aluno.nome);
+        const aulas = fakeData.aulas.filter(a => a.aluno === aluno.nome);
         
         document.getElementById('modal-aluno-nome').textContent = `Histórico de ${aluno.nome}`;
         document.getElementById('stat-concluidas').textContent = aulas.filter(a => a.status === 'Concluída').length;
@@ -160,24 +142,17 @@ if (document.getElementById('historico-page-content')) {
         const listaAulasEl = document.getElementById('aluno-aulas-lista');
         listaAulasEl.innerHTML = '';
         if(aulas.length === 0) {
-            listaAulasEl.innerHTML = '<p class="text-center text-gray-500">Nenhuma aula para este aluno.</p>'
+            listaAulasEl.innerHTML = '<p class="text-center text-gray-500">Nenhuma aula para este aluno.</p>';
         } else {
             aulas.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(aula => {
-                listaAulasEl.innerHTML += `
-                    <div class="flex justify-between p-2 border-b last:border-b-0">
-                        <span>${new Date(aula.date + 'T00:00:00-03:00').toLocaleDateString('pt-BR')} - ${aula.topico || 'Aula'}</span>
-                        <span class="status-badge ${statusStyles[aula.status]}">${aula.status}</span>
-                    </div>
-                `;
+                listaAulasEl.innerHTML += `<div class="flex justify-between p-2 border-b last:border-b-0"><span class="text-gray-700">${new Date(aula.date + 'T00:00:00-03:00').toLocaleDateString('pt-BR')} - ${aula.topico || 'Aula'}</span><span class="status-badge ${statusStyles[aula.status]}">${aula.status}</span></div>`;
             });
         }
-        
-        modal.classList.remove('hidden');
         modal.classList.add('flex');
     };
 
-    const alunos = loadData(STORAGE_KEY_ALUNOS);
-    alunos.forEach(aluno => filtroAlunoEl.innerHTML += `<option value="${aluno.nome}">${aluno.nome}</option>`);
+    // Carga Inicial e Eventos
+    fakeData.alunos.forEach(aluno => filtroAlunoEl.innerHTML += `<option value="${aluno.nome}">${aluno.nome}</option>`);
 
     [filtroAlunoEl, filtroStatusEl, filtroDataInicioEl, filtroDataFimEl].forEach(el => el.addEventListener('change', renderHistorico));
     
@@ -189,7 +164,8 @@ if (document.getElementById('historico-page-content')) {
         }
     });
 
-    document.getElementById('modal-close-btn').addEventListener('click', () => modal.classList.add('hidden'));
+    document.getElementById('modal-close-btn').addEventListener('click', () => modal.classList.remove('flex'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('flex'); });
 
     renderHistorico();
 }
